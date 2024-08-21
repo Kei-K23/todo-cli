@@ -59,6 +59,7 @@ void makeTaskComplete(std::vector<Task> &tasks)
         if (task.id == search || task.title == search)
         {
             task.status = "COMPLETED";
+            std::cout << "Successfully marked the task completed" << std::endl;
             return; // Exit from the loop, unless it will run infinite
         }
     }
@@ -80,6 +81,7 @@ void editTask(std::vector<Task> &tasks)
 
             std::cout << "Enter due date: ";
             std::getline(std::cin, task.dueDate);
+            std::cout << "Successfully updated the task completed" << std::endl;
             return; // Exit from the loop, unless it will run infinite
         }
     }
@@ -110,17 +112,88 @@ void deleteTask(std::vector<Task> &tasks)
     std::cout << "Task not found" << std::endl;
 }
 
+// Function to split the text into multiple lines based on the given width
+std::vector<std::string> wrapText(const std::string &text, size_t width)
+{
+    std::vector<std::string> lines;
+    std::istringstream words(text);
+    std::string word;
+    std::string line;
+
+    while (words >> word)
+    {
+        if (line.length() + word.length() + 1 <= width)
+        {
+            if (!line.empty())
+                line += " ";
+            line += word;
+        }
+        else
+        {
+            lines.push_back(line);
+            line = word;
+        }
+    }
+
+    if (!line.empty())
+        lines.push_back(line);
+
+    return lines;
+}
+
+// Function to print all tasks in a table format with text wrapping
 void listAllTasks(const std::vector<Task> &tasks)
 {
-    for (const auto &task : tasks)
+    const int idWidth = 8;
+    const int titleWidth = 20;
+    const int descriptionWidth = 30;
+    const int dueDateWidth = 15;
+    const int statusWidth = 10;
+
+    const int totalWidth = idWidth + titleWidth + descriptionWidth + dueDateWidth + statusWidth + 9; // 6 for separators
+
+    // Print table header
+    std::cout << "+" << std::string(totalWidth, '-') << "+" << std::endl;
+    std::cout << "| " << std::left << std::setw(idWidth) << "Id"
+              << "| " << std::setw(titleWidth) << "Title"
+              << "| " << std::setw(descriptionWidth) << "Description"
+              << "| " << std::setw(dueDateWidth) << "Due Date"
+              << "| " << std::setw(statusWidth) << "Status" << "|" << std::endl;
+    std::cout << "+" << std::string(totalWidth, '-') << "+" << std::endl;
+
+    // Print each task
+    for (size_t i = 0; i < tasks.size(); ++i)
     {
-        std::cout << "Id: " << task.id << std::endl;
-        std::cout << "Title: " << task.title << std::endl;
-        std::cout << "Description: " << task.description << std::endl;
-        std::cout << "Due Date: " << task.dueDate << std::endl;
-        std::cout << "Status: " << task.status << std::endl;
-        std::cout << std::endl;
+        const auto &task = tasks[i];
+        // Wrap the description text
+        std::vector<std::string> wrappedDescription = wrapText(task.description, descriptionWidth);
+
+        // Print the first line of the task
+        std::cout << "| " << std::left << std::setw(idWidth) << task.id
+                  << "| " << std::setw(titleWidth) << task.title
+                  << "| " << std::setw(descriptionWidth) << wrappedDescription[0]
+                  << "| " << std::setw(dueDateWidth) << task.dueDate
+                  << "| " << std::setw(statusWidth) << task.status << "|" << std::endl;
+
+        // Print the remaining lines of the wrapped description
+        for (size_t j = 1; j < wrappedDescription.size(); ++j)
+        {
+            std::cout << "| " << std::setw(idWidth) << ""
+                      << "| " << std::setw(titleWidth) << ""
+                      << "| " << std::setw(descriptionWidth) << wrappedDescription[j]
+                      << "| " << std::setw(dueDateWidth) << ""
+                      << "| " << std::setw(statusWidth) << "" << "|" << std::endl;
+        }
+
+        // Print separator line after each task except the last one
+        if (i < tasks.size() - 1)
+        {
+            std::cout << "+" << std::string(totalWidth, '-') << "+" << std::endl;
+        }
     }
+
+    // Print table footer
+    std::cout << "+" << std::string(totalWidth, '-') << "+" << std::endl;
 }
 
 void saveTasksToCSV(const std::vector<Task> &tasks, const std::string filename)
@@ -134,6 +207,7 @@ void saveTasksToCSV(const std::vector<Task> &tasks, const std::string filename)
              << "\"" << task.status << "\","
              << "\"" << task.dueDate << "\"\n";
     }
+    std::cout << "Successfully saved the tasks." << std::endl;
 }
 
 void loadTasksFromCSV(std::vector<Task> &tasks, const std::string filename)
@@ -166,6 +240,9 @@ void loadTasksFromCSV(std::vector<Task> &tasks, const std::string filename)
 
 int main()
 {
+    // Seed the random number generator with the current time
+    srand(static_cast<unsigned int>(time(0)));
+
     std::vector<Task> tasks;
     const std::string filename = "tasks.csv";
 
@@ -180,7 +257,8 @@ int main()
         std::cout << "3. Edit task" << std::endl;
         std::cout << "4. Delete task" << std::endl;
         std::cout << "5. List all tasks" << std::endl;
-        std::cout << "6. Save and Exit" << std::endl;
+        std::cout << "6. Save the tasks" << std::endl;
+        std::cout << "7. Save and Exit" << std::endl;
         std::cout << "Enter your choice: ";
         std::cin >> choice;
         std::cin.ignore(); // To clear the newline from input buffer
@@ -188,27 +266,35 @@ int main()
         {
         case 1:
             addNewTask(tasks);
+            std::cout << std::endl;
             break;
         case 2:
             makeTaskComplete(tasks);
+            std::cout << std::endl;
             break;
         case 3:
             editTask(tasks);
+            std::cout << std::endl;
             break;
         case 4:
             deleteTask(tasks);
+            std::cout << std::endl;
             break;
         case 5:
             listAllTasks(tasks);
+            std::cout << std::endl;
             break;
         case 6:
+        case 7:
             saveTasksToCSV(tasks, filename);
+            std::cout << std::endl;
             break;
         default:
             std::cout << "Invalid choice!" << std::endl;
+            std::cout << std::endl;
         }
 
-    } while (choice != 6);
+    } while (choice != 7);
 
     return 0;
 }
